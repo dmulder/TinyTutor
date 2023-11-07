@@ -21,7 +21,7 @@ class VideoBlock:
         # Generate images until the user decides it is sufficient
         response = self.client.images.generate(
           model="dall-e-3",
-          prompt='An image that envisions the following prompt: "%s"' % self.text,
+          prompt='Digital art that envisions the following prompt: "%s"' % self.text,
           size="1792x1024",
           quality="standard",
           n=1,
