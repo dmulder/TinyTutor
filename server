@@ -8,6 +8,9 @@ from moviepy import editor
 import os
 import requests
 from tempfile import NamedTemporaryFile
+import validators
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
 
 class VideoBlock:
     def __init__(self, client, paragraph_input):
@@ -117,7 +120,8 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
     print('Generating video...')
     for content in final_content:
         content.generate_video()
-    return append_videos(final_content, output_filename)
+    append_videos(final_content, output_filename)
+    print('Video created successfully!')
 
 def append_videos(final_content, output_filename):
     if not output_filename.endswith('.mp4'):
@@ -128,7 +132,6 @@ def append_videos(final_content, output_filename):
 
     for content in final_content:
         content.cleanup()
-    return output_filename
 
 def prompt_message(client, prompt):
     chat_completion = client.chat.completions.create(
@@ -142,12 +145,16 @@ def prompt_message(client, prompt):
     )
     return chat_completion.choices[0].message.content
 
+def check_url(prompt):
+    # Check if the input prompt is actually a url
+    return validators.url(prompt)
+
 if __name__ == '__main__':
     openai_key = None
     if os.path.exists('./openai.key'):
         openai_key = open('./openai.key', 'r').read().strip()
     parser = argparse.ArgumentParser(description='A simple lesson generator using openAI')
-    parser.add_argument('prompt', help='Either a prompt, or an input filename document to summarize')
+    parser.add_argument('prompt', help='Either a prompt, an input filename, or a url')
     parser.add_argument('output', help='Output video file name')
     parser.add_argument('--openai-key', help='OpenAI key for authenticating to the service', default=openai_key)
     parser.add_argument('--age', help='The age of the audiance', type=int, default=10)
@@ -157,11 +164,17 @@ if __name__ == '__main__':
         exit(1)
     # Is the prompt actually a filename?
     audiance_type = 'a child' if args.age < 18 else 'an adult'
-    if os.path.exists(args.prompt):
-        prompt_msg = 'Reword and summarize the following content for %s aged %d: ' % (audiance_type, args.age)
+    prompt_msg = 'Reword and summarize the following content for %s aged %d: ' % (audiance_type, args.age)
+    if check_url(args.prompt):
+        html = urlopen(args.prompt).read()
+        soup = BeautifulSoup(html, features="html.parser")
+        for script in soup(["script", "style"]):
+            script.extract()
+        prompt = soup.get_text()
+    elif os.path.exists(args.prompt):
         prompt = open(args.prompt, 'r').read()
     else:
         prompt_msg = 'Phrase your response for %s aged %d. ' % (audiance_type, args.age)
         prompt = args.prompt
 
-    print(generate_lesson(prompt, args.openai_key, prompt_msg, args.output))
+    generate_lesson(prompt, args.openai_key, prompt_msg, args.output)
