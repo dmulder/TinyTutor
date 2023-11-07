@@ -19,6 +19,8 @@ class VideoBlock:
 
     def choose_image(self):
         # Generate images until the user decides it is sufficient
+        print(self.text)
+        print('Generating an image for this text...')
         resp = 'n'
         while resp.startswith('n'):
             response = self.client.images.generate(
@@ -30,7 +32,6 @@ class VideoBlock:
             )
             image_url = response.data[0].url
             Popen(['google-chrome', image_url])
-            print(self.text)
             resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
         img_data = requests.get(image_url).content
         with NamedTemporaryFile('w', delete=False, suffix='.png') as t:
@@ -110,8 +111,10 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
         final_content.append(VideoBlock(client, main_content))
     for content in final_content:
         content.choose_image()
+    print('Generating audio...')
     for content in final_content:
         content.generate_audio()
+    print('Generating video...')
     for content in final_content:
         content.generate_video()
     return append_videos(final_content, output_filename)
