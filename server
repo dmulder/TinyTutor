@@ -60,22 +60,23 @@ class VideoBlock:
         pass
 
 content_comment = """###############################################################
-# The following is the generated lesson content.              #
-# Make any necessary changes to the text prior to proceeding. #
-# Designate sections by spliting them up by two newlines      #
-# ('\\n\\n'). Each section will be paired with a matching     #
-# image.                                                      #
+# The following is the generated lesson content.
+# Make any necessary changes to the text prior to proceeding.
+# Designate sections by spliting them up by two newlines
+# ('\\n\\n'). Each section will be paired with a matching
+# image. The more sections you specify, the more images will
+# be generated (and the more specific the images will be).
 ###############################################################
 
 """
 
 prompt_comment = """###############################################################
-# The following is your input prompt.                         #
-# Designate sections by spliting them up by two newlines      #
-# ('\\n\\n'). The smaller you split the sections, the more    #
-# response text can be generated. Do NOT add two newlines     #
-# between headings and paragraphs. Always ensure these are    #
-# together in the same block.                                 #
+# The following is your input prompt.
+# Designate sections by spliting them up by two newlines
+# ('\\n\\n'). The smaller you split the sections, the more
+# response text can be generated. Do NOT add two newlines
+# between headings and paragraphs. Always ensure these are
+# together in the same block.
 ###############################################################
 
 """
