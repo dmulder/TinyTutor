@@ -112,7 +112,7 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
         resp = 'n'
         while resp.startswith('n'):
             content.choose_image()
-            Popen(['google-chrome', self.image])
+            Popen(['google-chrome', content.image])
             resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
     print('Generating audio...')
     for content in final_content:
