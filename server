@@ -1,0 +1,162 @@
+#!/usr/bin/python3
+from openai import OpenAI
+from pathlib import Path
+from subprocess import Popen, PIPE
+import argparse
+from mutagen.mp3 import MP3
+from moviepy import editor
+import os
+import requests
+from tempfile import NamedTemporaryFile
+
+class VideoBlock:
+    def __init__(self, client, paragraph_input):
+        self.client = client
+        self.text = paragraph_input
+        self.audio = None
+        self.image = None
+        self.video = None
+
+    def choose_image(self):
+        # Generate images until the user decides it is sufficient
+        resp = 'n'
+        while resp.startswith('n'):
+            response = self.client.images.generate(
+              model="dall-e-3",
+              prompt='An image that envisions the following prompt: "%s"' % self.text,
+              size="1792x1024",
+              quality="standard",
+              n=1,
+            )
+            image_url = response.data[0].url
+            Popen(['google-chrome', image_url])
+            print(self.text)
+            resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
+        img_data = requests.get(image_url).content
+        with NamedTemporaryFile('w', delete=False) as t:
+            self.image = t.name
+        with open(self.image, 'wb') as w:
+            w.write(img_data)
+
+    def generate_audio(self):
+        # Generate the spoken audio
+        response = self.client.audio.speech.create(
+          model="tts-1",
+          voice="alloy",
+          input=self.text
+        )
+        with NamedTemporaryFile('w', delete=False) as t:
+            response.stream_to_file(t.name)
+            self.audio = t.name
+
+    def generate_video(self):
+        video = editor.ImageClip(self.image)
+        audio = MP3(self.audio)
+        audio_length = audio.info.length
+        video.duration = audio_length
+        audio = editor.AudioFileClip(self.audio)
+        final_video = video.set_audio(audio)
+        with NamedTemporaryFile('w', delete=False) as t:
+            self.video = t.name
+        final_video.write_videofile(fps=1, codec="mpeg4", filename=self.video)
+        print(self.video)
+
+    def cleanup(self):
+        # TODO: Delete the audio and image files.
+        pass
+
+content_comment = """###############################################################
+# The following is the generated lesson content.              #
+# Make any necessary changes to the text prior to proceeding. #
+# Designate sections by spliting them up by two newlines      #
+# ('\\n\\n'). Each section will be paired with a matching     #
+# image.                                                      #
+###############################################################
+
+"""
+
+prompt_comment = """###############################################################
+# The following is your input prompt.                         #
+# Designate sections by spliting them up by two newlines      #
+# ('\\n\\n'). The smaller you split the sections, the more    #
+# response text can be generated. Do NOT add two newlines     #
+# between headings and paragraphs. Always ensure these are    #
+# together in the same block.                                 #
+###############################################################
+
+"""
+
+def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
+    client = OpenAI(api_key=openai_key)
+    # Manually verify the prompt input
+    with NamedTemporaryFile('w') as t:
+        t.write(prompt_comment+prompt)
+        t.flush()
+        Popen(['vim', t.name]).wait()
+        t.flush()
+        with open(t.name, 'r') as r:
+            prompt = r.read().replace(prompt_comment, '')
+    # Split up the prompt by paragraph.
+    final_content = []
+    for prompt_paragraph in prompt.split('\n\n'):
+        main_content = prompt_message(client, prompt_msg+prompt_paragraph)
+        with NamedTemporaryFile('w') as t:
+            t.write(content_comment+main_content)
+            t.flush()
+            Popen(['vim', t.name]).wait()
+            t.flush()
+            with open(t.name, 'r') as r:
+                main_content = r.read().replace(content_comment, '')
+        final_content.append(VideoBlock(client, main_content))
+    for content in final_content:
+        content.choose_image()
+    for content in final_content:
+        content.generate_audio()
+    for content in final_content:
+        content.generate_video()
+    return append_videos(final_content, output_filename)
+
+def append_videos(final_content, output_filename):
+    video_files = [editor.VideoFileClip(c.video) for c in final_content]
+    final_clip = editor.concatenate_videoclips(video_files)
+    final_clip.to_videofile(output_filename, fps=1)
+
+    for content in final_content:
+        content.cleanup()
+    return output_filename
+
+def prompt_message(client, prompt):
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model="gpt-3.5-turbo",
+    )
+    return chat_completion.choices[0].message.content
+
+if __name__ == '__main__':
+    openai_key = None
+    if os.path.exists('./openai.key'):
+        openai_key = open('./openai.key', 'r').read().strip()
+    parser = argparse.ArgumentParser(description='A simple lesson generator using openAI')
+    parser.add_argument('prompt', help='Either a prompt, or an input filename document to summarize')
+    parser.add_argument('output', help='Output video file name')
+    parser.add_argument('--openai-key', help='OpenAI key for authenticating to the service', default=openai_key)
+    parser.add_argument('--age', help='The age of the audiance', type=int, default=10)
+    args = parser.parse_args()
+    if args.openai_key is None:
+        print('An OpenAI key is mandatory to proceed.')
+        exit(1)
+    # Is the prompt actually a filename?
+    audiance_type = 'a child' if args.age < 18 else 'an adult'
+    if os.path.exists(args.prompt):
+        prompt_msg = 'Reword and summarize the following content for %s aged %d: ' % (audiance_type, args.age)
+        prompt = open(args.prompt, 'r').read()
+    else:
+        prompt_msg = 'Phrase your response for %s aged %d. ' % (audiance_type, args.age)
+        prompt = args.prompt
+
+    print(generate_lesson(prompt, args.openai_key, prompt_msg, args.output))
