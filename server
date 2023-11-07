@@ -19,20 +19,14 @@ class VideoBlock:
 
     def choose_image(self):
         # Generate images until the user decides it is sufficient
-        print(self.text)
-        print('Generating an image for this text...')
-        resp = 'n'
-        while resp.startswith('n'):
-            response = self.client.images.generate(
-              model="dall-e-3",
-              prompt='An image that envisions the following prompt: "%s"' % self.text,
-              size="1792x1024",
-              quality="standard",
-              n=1,
-            )
-            image_url = response.data[0].url
-            Popen(['google-chrome', image_url])
-            resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
+        response = self.client.images.generate(
+          model="dall-e-3",
+          prompt='An image that envisions the following prompt: "%s"' % self.text,
+          size="1792x1024",
+          quality="standard",
+          n=1,
+        )
+        image_url = response.data[0].url
         img_data = requests.get(image_url).content
         with NamedTemporaryFile('w', delete=False, suffix='.png') as t:
             self.image = t.name
@@ -60,7 +54,6 @@ class VideoBlock:
         with NamedTemporaryFile('w', delete=False, suffix='.mp4') as t:
             self.video = t.name
         final_video.write_videofile(fps=1, codec="mpeg4", filename=self.video)
-        print(self.video)
 
     def cleanup(self):
         # TODO: Delete the audio and image files.
@@ -110,7 +103,13 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
                 main_content = r.read().replace(content_comment, '')
         final_content.append(VideoBlock(client, main_content))
     for content in final_content:
-        content.choose_image()
+        print(content.text)
+        print('Generating an image for this text...')
+        resp = 'n'
+        while resp.startswith('n'):
+            content.choose_image()
+            Popen(['google-chrome', self.image])
+            resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
     print('Generating audio...')
     for content in final_content:
         content.generate_audio()
