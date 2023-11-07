@@ -33,7 +33,7 @@ class VideoBlock:
             print(self.text)
             resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
         img_data = requests.get(image_url).content
-        with NamedTemporaryFile('w', delete=False) as t:
+        with NamedTemporaryFile('w', delete=False, suffix='.png') as t:
             self.image = t.name
         with open(self.image, 'wb') as w:
             w.write(img_data)
@@ -45,7 +45,7 @@ class VideoBlock:
           voice="alloy",
           input=self.text
         )
-        with NamedTemporaryFile('w', delete=False) as t:
+        with NamedTemporaryFile('w', delete=False, suffix='.mp3') as t:
             response.stream_to_file(t.name)
             self.audio = t.name
 
@@ -56,7 +56,7 @@ class VideoBlock:
         video.duration = audio_length
         audio = editor.AudioFileClip(self.audio)
         final_video = video.set_audio(audio)
-        with NamedTemporaryFile('w', delete=False) as t:
+        with NamedTemporaryFile('w', delete=False, suffix='.mp4') as t:
             self.video = t.name
         final_video.write_videofile(fps=1, codec="mpeg4", filename=self.video)
         print(self.video)
@@ -117,6 +117,8 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
     return append_videos(final_content, output_filename)
 
 def append_videos(final_content, output_filename):
+    if not output_filename.endswith('.mp4'):
+        output_filename = output_filename + '.mp4'
     video_files = [editor.VideoFileClip(c.video) for c in final_content]
     final_clip = editor.concatenate_videoclips(video_files)
     final_clip.to_videofile(output_filename, fps=1)
