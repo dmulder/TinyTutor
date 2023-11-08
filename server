@@ -20,7 +20,18 @@ class VideoBlock:
         self.image = None
         self.video = None
 
-    def choose_image(self):
+    def choose_image(self, fname):
+        # Is it a url, or a local filename?
+        if check_url(fname):
+            img_data = requests.get(fname).content
+            with NamedTemporaryFile('w', delete=False) as t:
+                self.image = t.name
+            with open(self.image, 'wb') as w:
+                w.write(img_data)
+        elif os.path.exists(fname):
+            self.image = fname
+
+    def generate_image(self):
         # Generate images until the user decides it is sufficient
         response = self.client.images.generate(
           model="dall-e-3",
@@ -108,10 +119,18 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
         final_content.append(VideoBlock(client, main_content))
     for content in final_content:
         print(content.text)
+        resp = input('Would you like to choose an existing image? (y/N) ').strip().lower() or 'n'
+        if resp.startswith('y'):
+            fname = input('Choose a filename: ').strip()
+            content.choose_image(fname)
+            if content.image:
+                continue
+            else:
+                print('Image not found')
         print('Generating an image for this text...')
         resp = 'n'
         while resp.startswith('n'):
-            content.choose_image()
+            content.generate_image()
             Popen(['google-chrome', content.image])
             resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
     print('Generating audio...')
