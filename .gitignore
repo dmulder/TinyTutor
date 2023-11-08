@@ -160,3 +160,13 @@ cython_debug/
 #.idea/
 
 openai.key
+*.mp4
+*.txt
+
+# Django #
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
