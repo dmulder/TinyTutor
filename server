@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from openai import OpenAI
+from openai import OpenAI, InternalServerError
 from pathlib import Path
 from subprocess import Popen, PIPE
 import argparse
@@ -11,6 +11,7 @@ from tempfile import NamedTemporaryFile
 import validators
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
+import sys
 
 class VideoBlock:
     def __init__(self, client, paragraph_input):
@@ -33,13 +34,17 @@ class VideoBlock:
 
     def generate_image(self):
         # Generate images until the user decides it is sufficient
-        response = self.client.images.generate(
-          model="dall-e-3",
-          prompt='Digital art that envisions the following prompt: "%s"' % self.text,
-          size="1792x1024",
-          quality="standard",
-          n=1,
-        )
+        try:
+            response = self.client.images.generate(
+              model="dall-e-3",
+              prompt='Digital art that envisions the following prompt: "%s"' % self.text,
+              size="1792x1024",
+              quality="standard",
+              n=1,
+            )
+        except InternalServerError:
+            sys.stderr.write('Image failed to generate\n')
+            return
         image_url = response.data[0].url
         img_data = requests.get(image_url).content
         with NamedTemporaryFile('w', delete=False, suffix='.png') as t:
@@ -49,11 +54,15 @@ class VideoBlock:
 
     def generate_audio(self):
         # Generate the spoken audio
-        response = self.client.audio.speech.create(
-          model="tts-1",
-          voice="alloy",
-          input=self.text
-        )
+        try:
+            response = self.client.audio.speech.create(
+              model="tts-1",
+              voice="alloy",
+              input=self.text
+            )
+        except InternalServerError:
+            sys.stderr.write('Audio failed to generate\n')
+            return
         with NamedTemporaryFile('w', delete=False, suffix='.mp3') as t:
             response.stream_to_file(t.name)
             self.audio = t.name
