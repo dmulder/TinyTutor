@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from openai import OpenAI, InternalServerError
+from openai import OpenAI, InternalServerError, RateLimitError
 from pathlib import Path
 from subprocess import Popen, PIPE
 import argparse
@@ -43,7 +43,7 @@ class VideoBlock:
               quality="standard",
               n=1,
             )
-        except InternalServerError:
+        except (InternalServerError, RateLimitError):
             sys.stderr.write('Image failed to generate\n')
             return
         image_url = response.data[0].url
@@ -61,7 +61,7 @@ class VideoBlock:
               voice="alloy",
               input=self.text
             )
-        except InternalServerError:
+        except (InternalServerError, RateLimitError):
             sys.stderr.write('Audio failed to generate\n')
             return
         with NamedTemporaryFile('w', delete=False, suffix='.mp3') as t:
@@ -192,7 +192,7 @@ def prompt_message(client, prompt):
             ],
             model="gpt-3.5-turbo",
         )
-    except InternalServerError as e:
+    except (InternalServerError, RateLimitError) as e:
         sys.stderr.write('Failed generating text: %s\n' % str(e))
         return None
     else:
