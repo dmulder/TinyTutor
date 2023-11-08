@@ -12,6 +12,7 @@ import validators
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import sys
+from time import sleep
 
 class VideoBlock:
     def __init__(self, client, paragraph_input):
@@ -118,6 +119,11 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
     final_content = []
     for prompt_paragraph in prompt.split('\n\n'):
         main_content = prompt_message(client, prompt_msg+prompt_paragraph)
+        # If the server failed to respond, wait a moment and try again
+        while not main_content:
+            sys.stderr.write('Server failed to respond, trying again in 5 seconds...\n')
+            sleep(5)
+            main_content = prompt_message(client, prompt_msg+prompt_paragraph)
         with NamedTemporaryFile('w') as t:
             t.write(content_comment+main_content)
             t.flush()
@@ -141,11 +147,19 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
         resp = 'n'
         while resp.startswith('n'):
             content.generate_image()
+            while not content.image:
+                sys.stderr.write('Server failed to respond, trying again in 5 seconds...\n')
+                sleep(5)
+                content.generate_image()
             Popen(['google-chrome', content.image])
             resp = input('Is this image sufficient? (Y/n) ').strip().lower() or 'y'
     print('Generating audio...')
     for content in final_content:
         content.generate_audio()
+        while not content.audio:
+            sys.stderr.write('Server failed to respond, trying again in 5 seconds...\n')
+            sleep(5)
+            content.generate_audio()
     print('Generating video...')
     for content in final_content:
         content.generate_video()
@@ -163,16 +177,21 @@ def append_videos(final_content, output_filename):
         content.cleanup()
 
 def prompt_message(client, prompt):
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-        model="gpt-3.5-turbo",
-    )
-    return chat_completion.choices[0].message.content
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model="gpt-3.5-turbo",
+        )
+    except InternalServerError as e:
+        sys.stderr.write('Failed generating text: %s\n' % str(e))
+        return None
+    else:
+        return chat_completion.choices[0].message.content
 
 def check_url(prompt):
     # Check if the input prompt is actually a url
