@@ -173,6 +173,11 @@ def append_videos(final_content, output_filename):
     final_clip = editor.concatenate_videoclips(video_files)
     final_clip.to_videofile(output_filename, fps=1)
 
+    subtitles_text = '\n\n'.join([c.text for c in final_content])
+    subtitle_file = output_filename + '.txt'
+    with open(subtitle_file, 'w') as w:
+        w.write(subtitles_text)
+
     for content in final_content:
         content.cleanup()
 
