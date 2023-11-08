@@ -125,7 +125,8 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
             t.flush()
             with open(t.name, 'r') as r:
                 main_content = r.read().replace(content_comment, '')
-        final_content.append(VideoBlock(client, main_content))
+        for content in main_content.split('\n\n'):
+            final_content.append(VideoBlock(client, content))
     for content in final_content:
         print(content.text)
         resp = input('Would you like to choose an existing image? (y/N) ').strip().lower() or 'n'
