@@ -148,6 +148,8 @@ def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
         print('Generating an image for this text...')
         resp = 'n'
         while resp.startswith('n'):
+            if content.image:
+                os.remove(content.image)
             content.generate_image()
             while not content.image:
                 sys.stderr.write('Server failed to respond, trying again in 5 seconds...\n')
