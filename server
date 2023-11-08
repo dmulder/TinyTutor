@@ -108,6 +108,8 @@ prompt_comment = """############################################################
 def generate_lesson(prompt, openai_key, prompt_msg, output_filename):
     client = OpenAI(api_key=openai_key)
     # Manually verify the prompt input
+    while '\n\n\n' in prompt:
+        prompt = prompt.replace('\n\n\n', '\n\n')
     with NamedTemporaryFile('w') as t:
         t.write(prompt_comment+prompt)
         t.flush()
