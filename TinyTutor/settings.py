@@ -129,3 +129,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# OpenAI API key for generating audio and images
+# https://platform.openai.com/docs/quickstart/step-2-setup-your-api-key
+OPENAI_API_KEY=None
