@@ -9,6 +9,7 @@ import validators
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from time import sleep
+import logging
 
 class VideoBlock:
     def __init__(self, client, paragraph_input, logger):
@@ -207,3 +208,13 @@ class VideoGenerator():
             return None
         else:
             return chat_completion.choices[0].message.content
+
+def parse_prompt_from_url(prompt_url):
+    html = urlopen(prompt_url).read()
+    soup = BeautifulSoup(html, features="html.parser")
+    for script in soup(["script", "style"]):
+        script.extract()
+    prompt = soup.get_text()
+    while '\n\n\n' in prompt:
+        prompt = prompt.replace('\n\n\n', '\n\n')
+    return prompt
