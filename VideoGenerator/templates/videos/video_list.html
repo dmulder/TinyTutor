@@ -1,17 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Video List</title>
-</head>
-<body>
-    <h1>Video List</h1>
-    <a href="./accounts/logout">logout</a>
-    <ul>
-	{% for video in videos %}
-            <li>
-		    <a href="{% url 'video_detail' video.id %}">{{ video.title }}</a>
-            </li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+{% extends "allauth/layouts/base.html" %}
+{% load allauth i18n %}
+{% block head_title %}
+	{% trans "Video List" %}
+{% endblock head_title %}
+{% block content %}
+	<h1>Video List</h1>
+	<ul>
+		{% for video in videos %}
+			<li>
+				<a href="{% url 'video_detail' video.id %}">{{ video.title }}</a>
+			</li>
+		{% endfor %}
+	</ul>
+{% endblock content %}

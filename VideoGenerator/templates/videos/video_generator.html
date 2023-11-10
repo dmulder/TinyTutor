@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Video Generator</title>
-</head>
-<body>
+{% extends "allauth/layouts/base.html" %}
+{% load allauth i18n %}
+{% block head_title %}
+	{% trans "Video Generator" %}
+{% endblock head_title %}
+{% block content %}
 	<h1>Video Generator</h1>
-	<a href="../accounts/logout">logout</a><br/><br/>
 	<form method="post" action="{% url 'video_generator' %}">
 		{% csrf_token %}
 		{{ form.as_p }}
 		<input type="submit" value="Next">
 	</form>
-</body>
-</html>
+{% endblock content %}

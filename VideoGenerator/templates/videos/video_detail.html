@@ -1,15 +1,13 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Video Detail</title>
-</head>
-<body>
-    <h1>Video Detail</h1>
-    <a href="../accounts/logout">logout</a>
-    <ul>
-        <li>Title: {{ video.title }}</li>
-        <li>Description: {{ video.description }}</li>
-	<li>Url: <a href="{{ video.file_url }}">{{ video.file_url }}</a></li>
-    </ul>
-</body>
-</html>
+{% extends "allauth/layouts/base.html" %}
+{% load allauth i18n %}
+{% block head_title %}
+	{% trans "Video Detail" %}
+{% endblock head_title %}
+{% block content %}
+	<h1>Video Detail</h1>
+	<ul>
+		<li>Title: {{ video.title }}</li>
+		<li>Description: {{ video.description }}</li>
+		<li>Url: <a href="{{ video.file_url }}">{{ video.file_url }}</a></li>
+	</ul>
+{% endblock content %}
