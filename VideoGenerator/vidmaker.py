@@ -209,6 +209,25 @@ class VideoGenerator():
         else:
             return chat_completion.choices[0].message.content
 
+logger = logging.getLogger(__name__)
+
+def prompt_message(client, prompt):
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model="gpt-3.5-turbo",
+        )
+    except (InternalServerError, RateLimitError) as e:
+        logger.error('Failed generating text: %s' % str(e))
+        return None
+    else:
+        return chat_completion.choices[0].message.content
+
 def parse_prompt_from_url(prompt_url):
     html = urlopen(prompt_url).read()
     soup = BeautifulSoup(html, features="html.parser")
@@ -218,3 +237,24 @@ def parse_prompt_from_url(prompt_url):
     while '\n\n\n' in prompt:
         prompt = prompt.replace('\n\n\n', '\n\n')
     return prompt
+
+def parse_prompt(openai_key, prompt, age):
+    client = OpenAI(api_key=openai_key)
+    final_content = []
+    audiance_type = 'a child' if age < 18 else 'an adult'
+    prompt_msg = 'Phrase your response for %s aged %d. ' % (audiance_type, age)
+    for prompt_paragraph in prompt.replace('\r', '').split('\n\n'):
+        timeout = 0
+        main_content = prompt_message(client, prompt_msg+prompt_paragraph)
+        # If the server failed to respond, wait a moment and try again
+        while not main_content and timeout < 3:
+            timeout += 1
+            logger.warning('Server failed to respond, trying again in 5 seconds')
+            sleep(5)
+            main_content = prompt_message(client, prompt_msg+prompt_paragraph)
+        if not main_content:
+            logger.error('Server failed to respond after 3 attempts, falling back to the input text')
+            main_content = prompt_paragraph
+        for content in main_content.split('\n\n'):
+            final_content.append(content)
+    return final_content
