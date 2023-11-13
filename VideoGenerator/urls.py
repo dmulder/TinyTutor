@@ -6,5 +6,6 @@ urlpatterns = [
     path('<int:video_id>/', views.video_detail, name='video_detail'),
     path('new/', views.video_generator, name='video_generator'),
     path('prompt/', views.video_prompt, name='video_prompt'),
-    path('segments/', views.video_prompts, name='video_prompts')
+    path('segments/', views.video_prompts, name='video_prompts'),
+    path('load_prompt/<int:prompt_id>/', views.load_prompt, name='load_prompt')
 ]

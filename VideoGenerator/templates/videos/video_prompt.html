@@ -5,7 +5,7 @@
 {% endblock head_title %}
 {% block content %}
 	<h1>Video Generator</h1>
-	<p>The following is dialog for the video. Modify the any necessary text and press Next to continue.<p/>
+	<p>The following is dialog for the video. Modify any necessary text and press Next to continue.<p/>
 	<form method="post" action="{% url 'video_prompt' %}">
 		{% csrf_token %}
 		{{ form.as_p }}
